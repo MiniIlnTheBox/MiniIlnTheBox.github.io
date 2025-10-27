@@ -1,6 +1,7 @@
 
 import { useParams } from "react-router-dom";
 import { useState, useMemo } from "react";
+import * as React from "react";
 import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
 import { ProductCard } from "@/components/ProductCard";
@@ -28,12 +29,25 @@ export default function Category() {
     ? getProductsByCategory(category)
     : allProducts;
 
-  const [priceRange, setPriceRange] = useState<number[]>([0, 500]);
+  // Auto-detect price range from products
+  const priceStats = useMemo(() => {
+    const prices = baseProducts.map(p => p.price);
+    const minPrice = Math.floor(Math.min(...prices));
+    const maxPrice = Math.ceil(Math.max(...prices));
+    return { minPrice, maxPrice };
+  }, [baseProducts]);
+
+  const [priceRange, setPriceRange] = useState<number[]>([priceStats.minPrice, priceStats.maxPrice]);
   const [selectedRatings, setSelectedRatings] = useState<number[]>([]);
   const [freeShipping, setFreeShipping] = useState(false);
   const [fastDelivery, setFastDelivery] = useState(false);
   const [selectedDiscounts, setSelectedDiscounts] = useState<string[]>([]);
   const [displayCount, setDisplayCount] = useState(ITEMS_PER_PAGE);
+
+  // Reset price range when category changes
+  React.useEffect(() => {
+    setPriceRange([priceStats.minPrice, priceStats.maxPrice]);
+  }, [priceStats.minPrice, priceStats.maxPrice]);
 
   const filteredProducts = useMemo(() => {
     return baseProducts.filter((product) => {
@@ -111,13 +125,14 @@ export default function Category() {
                 <Slider
                   value={priceRange}
                   onValueChange={setPriceRange}
-                  max={500}
-                  step={10}
+                  min={priceStats.minPrice}
+                  max={priceStats.maxPrice}
+                  step={1}
                   className="mb-2"
                 />
                 <div className="flex justify-between text-sm text-muted-foreground">
-                  <span>${priceRange[0]}</span>
-                  <span>${priceRange[1]}</span>
+                  <span>${priceRange[0].toFixed(2)}</span>
+                  <span>${priceRange[1].toFixed(2)}</span>
                 </div>
               </div>
 
